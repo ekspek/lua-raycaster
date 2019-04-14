@@ -25,10 +25,13 @@ local worldMap = {
 	{ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
 }
 
+local rays = {}
+
 local mapWidth = #worldMap[1]
 local mapHeight = #worldMap
 
-local rays = love.graphics.getWidth()
+local wW = love.graphics.getWidth()
+local wH = love.graphics.getHeight()
 
 local player = {
 	pos = {
@@ -60,10 +63,49 @@ function love.update(dt)
 		player.pos.y = player.pos.y - 10 * dt * math.sin(player.theta)
 	end
 
-	for x = 0,rays do
+	player.dir.x = math.cos(player.theta)
+	player.dir.y = math.sin(player.theta)
+
+	player.plane.x = math.sin(player.theta)
+	player.plane.y = -math.cos(player.theta)
+
+	--print(worldMap[math.floor(player.pos.x)][math.floor(player.pos.y)])
+end
+
+function love.draw()
+	--[[
+	local factor = 10
+	local pos = {
+		x = player.pos.x * factor,
+		y = player.pos.y * factor,
+	}
+	local dir = {
+		x = player.dir.x * factor,
+		y = player.dir.y * factor,
+	}
+	local plane = {
+		x = player.plane.x * factor,
+		y = player.plane.y * factor,
+	}
+
+	love.graphics.setColor(1,1,1,1)
+	love.graphics.setLineWidth(0.5)
+	love.graphics.line(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y)
+	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
+	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
+	love.graphics.setColor(1,0,0,1)
+	love.graphics.points(pos.x, pos.y)
+	love.graphics.setColor(0,1,0,1)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y)
+	love.graphics.setColor(0,0,1,1)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
+	--]]
+
+	for x = 0,wW do
 		local ray = {}
 
-		camera.x = 2 * x / rays - 1
+		camera.x = 2 * x / wW - 1
 		ray.x = player.dir.x + player.plane.x * camera.x
 		ray.y = player.dir.y + player.plane.y * camera.x
 
@@ -115,45 +157,22 @@ function love.update(dt)
 		else
 			perpWallDist = (map.y - player.pos.y + (1 - stepY) / 2) / ray.y
 		end
+
+		local lineHeight = wH / perpWallDist
+
+		local drawStart = -lineHeight / 2 + wH / 2
+		if drawStart < 0 then drawStart = 0 end
+		local drawEnd = lineHeight / 2 + wH / 2
+		if drawEnd >= wH then drawEnd = wH - 1 end
+
+		color = {0,1,0,1}
+
+		if side then
+			color[4] = color[4] / 2
+		end
+
+		love.graphics.line(x, drawStart, x, drawEnd)
 	end
-
-
-	player.dir.x = math.cos(player.theta)
-	player.dir.y = math.sin(player.theta)
-
-	player.plane.x = math.sin(player.theta)
-	player.plane.y = -math.cos(player.theta)
-
-	--print(worldMap[math.floor(player.pos.x)][math.floor(player.pos.y)])
-end
-
-function love.draw()
-	local factor = 10
-	local pos = {
-		x = player.pos.x * factor,
-		y = player.pos.y * factor,
-	}
-	local dir = {
-		x = player.dir.x * factor,
-		y = player.dir.y * factor,
-	}
-	local plane = {
-		x = player.plane.x * factor,
-		y = player.plane.y * factor,
-	}
-
-	love.graphics.setColor(1,1,1,1)
-	love.graphics.setLineWidth(0.5)
-	love.graphics.line(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y)
-	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
-	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
-	love.graphics.setColor(1,0,0,1)
-	love.graphics.points(pos.x, pos.y)
-	love.graphics.setColor(0,1,0,1)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y)
-	love.graphics.setColor(0,0,1,1)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
 end
 
 function love.keypressed(key)
