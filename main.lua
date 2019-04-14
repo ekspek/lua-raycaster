@@ -5,7 +5,7 @@ local worldMap = {
 	{ 1,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1 },
 	{ 1,0,1,0,0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,1 },
 	{ 1,0,1,0,0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,0,0,1,0,1 },
-	{ 1,0,1,1,1,0,1,0,1,0,1,0,0,1,1,0,1,1,1,1,1,1,1,1 },
+	{ 1,0,2,1,1,0,1,0,1,0,1,0,0,1,1,0,1,1,1,1,1,1,1,1 },
 	{ 1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1 },
 	{ 1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1 },
 	{ 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
@@ -27,9 +27,6 @@ local worldMap = {
 
 local rays = {}
 
-local mapWidth = #worldMap[1]
-local mapHeight = #worldMap
-
 local wW = love.graphics.getWidth()
 local wH = love.graphics.getHeight()
 
@@ -42,8 +39,6 @@ local player = {
 	plane = { x = 0, y = 0 },
 	theta = math.pi / 2,
 }
-
-local camera = {}
 
 function love.load()
 end
@@ -80,53 +75,72 @@ function love.update(dt)
 	player.plane.x = math.sin(player.theta)
 	player.plane.y = -math.cos(player.theta)
 
-	--print(worldMap[math.floor(player.pos.x)][math.floor(player.pos.y)])
-end
 
-function love.draw()
-	---[[
+	local pos = {
+		x = player.pos.x,
+		y = player.pos.y,
+	}
+	local dir = {
+		x = player.dir.x,
+		y = player.dir.y,
+	}
+	local plane = {
+		x = player.plane.x,
+		y = player.plane.y,
+	}
+
+	rays = {}
+
 	for x = 0,wW do
-		local ray = {}
+		local camera_x
+		local hit = false
+		local side
 
-		camera.x = 2 * x / wW - 1
-		ray.x = player.dir.x + player.plane.x * camera.x
-		ray.y = player.dir.y + player.plane.y * camera.x
+		local dist = {
+			ray = {},
+			delta = {},
+			side = {},
+			step = {},
+		}
+
+		camera_x = 2 * x / wW - 1
+		dist.ray.x = dir.x + plane.x * camera_x
+		dist.ray.y = dir.y + plane.y * camera_x
 
 		local map = {
-			x = math.floor(player.pos.x),
-			y = math.floor(player.pos.y),
+			x = math.floor(pos.x),
+			y = math.floor(pos.y),
 		}
 
 		-- Distance travelled by ray for one X or one Y unit
 		-- Result is not an X or Y distance
-		local deltaDistX = math.abs(1 / ray.x)
-		local deltaDistY = math.abs(1 / ray.y)
+		dist.delta.x = math.abs(1 / dist.ray.x)
+		dist.delta.y = math.abs(1 / dist.ray.y)
 
-		if ray.x < 0 then
-			stepX = -1
-			sideDistX = (player.pos.x - map.x) * deltaDistX
+		if dist.ray.x < 0 then
+			dist.step.x = -1
+			dist.side.x = (pos.x - map.x) * dist.delta.x
 		else
-			stepX = 1
-			sideDistX = (map.x + 1 - player.pos.x) * deltaDistX
+			dist.step.x = 1
+			dist.side.x = (map.x + 1 - pos.x) * dist.delta.x
 		end
 
-		if ray.y < 0 then
-			stepY = -1
-			sideDistY = (player.pos.y - map.y) * deltaDistY
+		if dist.ray.y < 0 then
+			dist.step.y = -1
+			dist.side.y = (pos.y - map.y) * dist.delta.y
 		else
-			stepY = 1
-			sideDistY = (map.y + 1 - player.pos.y) * deltaDistY
+			dist.step.y = 1
+			dist.side.y = (map.y + 1 - pos.y) * dist.delta.y
 		end
 
-		local hit = false
 		while not hit do
-			if sideDistX < sideDistY then
-				sideDistX = sideDistX + deltaDistX
-				map.x = map.x + stepX
+			if dist.side.x < dist.side.y then
+				dist.side.x = dist.side.x + dist.delta.x
+				map.x = map.x + dist.step.x
 				side = false
 			else
-				sideDistY = sideDistY + deltaDistY
-				map.y = map.y + stepY
+				dist.side.y = dist.side.y + dist.delta.y
+				map.y = map.y + dist.step.y
 				side = true
 			end
 
@@ -136,29 +150,47 @@ function love.draw()
 		end
 
 		if not side then
-			perpWallDist = (map.x - player.pos.x + (1 - stepX) / 2) / ray.x
+			dist.perpWall = (map.x - pos.x + (1 - dist.step.x) / 2) / dist.ray.x
 		else
-			perpWallDist = (map.y - player.pos.y + (1 - stepY) / 2) / ray.y
+			dist.perpWall = (map.y - pos.y + (1 - dist.step.y) / 2) / dist.ray.y
 		end
 
-		local lineHeight = wH / perpWallDist
-
+		local lineHeight = wH / dist.perpWall
 		local drawStart = -lineHeight / 2 + wH / 2
-		if drawStart < 0 then drawStart = 0 end
 		local drawEnd = lineHeight / 2 + wH / 2
+
+		if drawStart < 0 then drawStart = 0 end
 		if drawEnd >= wH then drawEnd = wH - 1 end
 
-		local color = {0,1,0,1}
+		local tile = worldMap[map.x][map.y] 
+		local colorPalette = {
+			{0,1,0,1},
+			{0,0,1,1},
+			{1,0,0,1},
+			{1,1,0,1},
+		}
+
+		local tileColor = colorPalette[tile]
 
 		if side then
-			color[4] = color[4] / 2
+			tileColor[4] = tileColor[4] / 2
 		end
 
-		love.graphics.setColor(color)
-		love.graphics.setLineStyle('rough')
-		love.graphics.line(x, drawStart, x, drawEnd)
+		local ray = {
+			x, drawStart, x, drawEnd,
+			tileColor = tileColor,
+		}
+
+		table.insert(rays, ray)
 	end
-	--]]
+end
+
+function love.draw()
+	love.graphics.setLineStyle('rough')
+	for _, ray in ipairs(rays) do
+		love.graphics.setColor(ray.tileColor)
+		love.graphics.line(ray)
+	end
 
 	---[[
 	local factor = 10
@@ -195,7 +227,6 @@ function love.draw()
 			end
 		end
 	end
-	--]]
 end
 
 function love.keypressed(key)
