@@ -50,17 +50,17 @@ end
 
 function love.update(dt)
 	if love.keyboard.isDown('left') then
-		player.theta = player.theta - (5 * math.pi / 180)
+		player.theta = player.theta + (90 * dt * math.pi / 180)
 	elseif love.keyboard.isDown('right') then
-		player.theta = player.theta + (5 * math.pi / 180)
+		player.theta = player.theta - (90 * dt * math.pi / 180)
 	end
 
 	if love.keyboard.isDown('up') then
-		player.pos.x = player.pos.x + 10 * dt * math.cos(player.theta)
-		player.pos.y = player.pos.y + 10 * dt * math.sin(player.theta)
+		player.pos.x = player.pos.x + 3 * dt * math.cos(player.theta)
+		player.pos.y = player.pos.y + 3 * dt * math.sin(player.theta)
 	elseif love.keyboard.isDown('down') then
-		player.pos.x = player.pos.x - 10 * dt * math.cos(player.theta)
-		player.pos.y = player.pos.y - 10 * dt * math.sin(player.theta)
+		player.pos.x = player.pos.x - 3 * dt * math.cos(player.theta)
+		player.pos.y = player.pos.y - 3 * dt * math.sin(player.theta)
 	end
 
 	player.dir.x = math.cos(player.theta)
@@ -73,35 +73,7 @@ function love.update(dt)
 end
 
 function love.draw()
-	--[[
-	local factor = 10
-	local pos = {
-		x = player.pos.x * factor,
-		y = player.pos.y * factor,
-	}
-	local dir = {
-		x = player.dir.x * factor,
-		y = player.dir.y * factor,
-	}
-	local plane = {
-		x = player.plane.x * factor,
-		y = player.plane.y * factor,
-	}
-
-	love.graphics.setColor(1,1,1,1)
-	love.graphics.setLineWidth(0.5)
-	love.graphics.line(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y)
-	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
-	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
-	love.graphics.setColor(1,0,0,1)
-	love.graphics.points(pos.x, pos.y)
-	love.graphics.setColor(0,1,0,1)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y)
-	love.graphics.setColor(0,0,1,1)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
-	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
-	--]]
-
+	---[[
 	for x = 0,wW do
 		local ray = {}
 
@@ -165,14 +137,54 @@ function love.draw()
 		local drawEnd = lineHeight / 2 + wH / 2
 		if drawEnd >= wH then drawEnd = wH - 1 end
 
-		color = {0,1,0,1}
+		local color = {0,1,0,1}
 
 		if side then
 			color[4] = color[4] / 2
 		end
 
+		love.graphics.setColor(color)
 		love.graphics.line(x, drawStart, x, drawEnd)
 	end
+	--]]
+
+	--[[
+	local factor = 10
+	local pos = {
+		x = player.pos.x * factor,
+		y = player.pos.y * factor,
+	}
+	local dir = {
+		x = player.dir.x * factor,
+		y = player.dir.y * factor,
+	}
+	local plane = {
+		x = player.plane.x * factor,
+		y = player.plane.y * factor,
+	}
+
+	love.graphics.setColor(1,1,1,1)
+	love.graphics.setLineWidth(0.5)
+	love.graphics.line(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y)
+	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
+	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
+	love.graphics.setColor(1,0,0,1)
+	love.graphics.points(pos.x, pos.y)
+	love.graphics.setColor(0,1,0,1)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y)
+	love.graphics.setColor(0,0,1,1)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
+	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
+
+	for i = 1,#worldMap do
+		for j = 1,#worldMap[i] do
+			if worldMap[i][j] > 0 then
+				love.graphics.setColor(0,0,1,1)
+				love.graphics.polygon('line', i*factor, j*factor, (i+1)*factor, j*factor, (i+1)*factor, (j+1)*factor, i*factor, (j+1)*factor)
+			end
+		end
+	end
+	--]]
 end
 
 function love.keypressed(key)
