@@ -91,11 +91,14 @@ function love.update(dt)
 
 	rays = {}
 
+	-- Main raycasting loop
+	-- Runs loop once per vertical pixel line
 	for x = 0,wW do
 		local camera_x
 		local hit = false
 		local side
 
+		-- Table containing main distances used through the loop
 		local dist = {
 			ray = {},
 			delta = {},
@@ -113,7 +116,6 @@ function love.update(dt)
 		}
 
 		-- Distance travelled by ray for one X or one Y unit
-		-- Result is not an X or Y distance
 		dist.delta.x = math.abs(1 / dist.ray.x)
 		dist.delta.y = math.abs(1 / dist.ray.y)
 
@@ -133,6 +135,7 @@ function love.update(dt)
 			dist.side.y = (map.y + 1 - pos.y) * dist.delta.y
 		end
 
+		-- Increase the ray distance if it hasn't hit a full tile yet
 		while not hit do
 			if dist.side.x < dist.side.y then
 				dist.side.x = dist.side.x + dist.delta.x
@@ -149,12 +152,14 @@ function love.update(dt)
 			end
 		end
 
+		-- Set the ray distance based on which side of the tile it hit
 		if not side then
 			dist.perpWall = (map.x - pos.x + (1 - dist.step.x) / 2) / dist.ray.x
 		else
 			dist.perpWall = (map.y - pos.y + (1 - dist.step.y) / 2) / dist.ray.y
 		end
 
+		-- Set on-screen line start and end positions based on ray distance
 		local lineHeight = wH / dist.perpWall
 		local drawStart = -lineHeight / 2 + wH / 2
 		local drawEnd = lineHeight / 2 + wH / 2
@@ -162,6 +167,7 @@ function love.update(dt)
 		if drawStart < 0 then drawStart = 0 end
 		if drawEnd >= wH then drawEnd = wH - 1 end
 
+		-- Set color based on tile number
 		local tile = worldMap[map.x][map.y] 
 		local colorPalette = {
 			{0,1,0,1},
@@ -172,10 +178,12 @@ function love.update(dt)
 
 		local tileColor = colorPalette[tile]
 
+		-- Add some shading depending on the side the ray hit
 		if side then
 			tileColor[4] = tileColor[4] / 2
 		end
 
+		-- Send back this vertical line's properties to be drawn in love.draw
 		local ray = {
 			x, drawStart, x, drawEnd,
 			tileColor = tileColor,
@@ -186,13 +194,14 @@ function love.update(dt)
 end
 
 function love.draw()
+	-- Main "3D" drawing loop
 	love.graphics.setLineStyle('rough')
 	for _, ray in ipairs(rays) do
 		love.graphics.setColor(ray.tileColor)
 		love.graphics.line(ray)
 	end
 
-	---[[
+	-- Minimap scale factor and variable importing
 	local factor = 10
 	local pos = {
 		y = player.pos.x * factor,
@@ -207,6 +216,7 @@ function love.draw()
 		x = player.plane.y * factor,
 	}
 
+	-- Player location on the minimap
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.line(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y)
 	love.graphics.line(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
@@ -219,6 +229,7 @@ function love.draw()
 	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x + plane.x, pos.y + dir.y + plane.y)
 	love.graphics.points(pos.x + dir.x, pos.y + dir.y, pos.x + dir.x - plane.x, pos.y + dir.y - plane.y)
 
+	-- Minimap tiles
 	for i = 1,#worldMap do
 		for j = 1,#worldMap[i] do
 			if worldMap[i][j] > 0 then
