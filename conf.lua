@@ -1,5 +1,5 @@
 function love.conf(t)
-	t.title = "Raycasting"
+	t.title = "Lua Raycaster"
 	t.console = true
 	t.window.width = 800
 	t.window.height = 600
