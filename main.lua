@@ -40,10 +40,22 @@ local player = {
 	theta = math.pi / 2,
 }
 
+local var = 1
+local gamma = 0
+
 function love.load()
 end
 
 function love.update(dt)
+	if love.keyboard.isDown('kp+') then
+		var = var + 0.01
+	elseif love.keyboard.isDown('kp-') then
+		var = var - 0.01
+	end
+
+	gamma = gamma + 0.001
+	var = 1 + 0.7 * math.sin(gamma)
+
 	if love.keyboard.isDown('left') then
 		player.theta = player.theta + (90 * math.pi / 180) * dt
 	elseif love.keyboard.isDown('right') then
@@ -72,8 +84,8 @@ function love.update(dt)
 	player.dir.x = math.cos(player.theta)
 	player.dir.y = math.sin(player.theta)
 
-	player.plane.x = math.sin(player.theta)
-	player.plane.y = -math.cos(player.theta)
+	player.plane.x = var * math.sin(player.theta)
+	player.plane.y = var * (-math.cos(player.theta))
 
 
 	local pos = {
@@ -160,7 +172,7 @@ function love.update(dt)
 		end
 
 		-- Set on-screen line start and end positions based on ray distance
-		local lineHeight = wH / dist.perpWall
+		local lineHeight = wH * var / dist.perpWall
 		local drawStart = -lineHeight / 2 + wH / 2
 		local drawEnd = lineHeight / 2 + wH / 2
 
@@ -181,6 +193,12 @@ function love.update(dt)
 		-- Add some shading depending on the side the ray hit
 		if side then
 			tileColor[4] = tileColor[4] / 2
+		end
+
+		if dist.perpWall < 20 then
+			tileColor[4] = tileColor[4] * ((10 / (dist.perpWall - 20)) + 1)
+		else
+			tileColor[4] = 0
 		end
 
 		-- Send back this vertical line's properties to be drawn in love.draw
