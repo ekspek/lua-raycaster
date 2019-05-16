@@ -30,15 +30,23 @@ local rays = {}
 local wW = love.graphics.getWidth()
 local wH = love.graphics.getHeight()
 
-local player = {
-	pos = {
-		x = 10.5,
-		y = 10.5,
-	},
-	dir = { x = 0, y = 0 },
-	plane = { x = 0, y = 0 },
-	theta = math.pi / 2,
-}
+local player = {}
+player.pos = {}
+player.dir = {}
+player.plane = {}
+player.pos.x = 10.5
+player.pos.y = 10.5
+player.dir.x = 0
+player.dir.y = 0
+player.plane.x = 0
+player.plane.y = 0
+player.plane.angle = 0
+player.theta = math.pi / 2
+
+local camera = {}
+camera.fov = 90
+camera.skew = 0
+camera.stretch = 0
 
 local var = 1
 local gamma = 0
@@ -53,8 +61,8 @@ function love.update(dt)
 		var = var - 0.01
 	end
 
-	gamma = gamma + 0.001
-	var = 1 + 0.7 * math.sin(gamma)
+	--gamma = gamma + 0.001
+	--var = 1 + 0.7 * math.sin(gamma)
 
 	if love.keyboard.isDown('left') then
 		player.theta = player.theta + (90 * math.pi / 180) * dt
@@ -81,51 +89,51 @@ function love.update(dt)
 		end
 	end
 
+	if love.keyboard.isDown('q') then
+		camera.skew = camera.skew + dt;
+	elseif love.keyboard.isDown('w') then
+		camera.skew = camera.skew - dt;
+	end
+
 	player.dir.x = math.cos(player.theta)
 	player.dir.y = math.sin(player.theta)
+	player.plane.x = var * math.sin(player.theta + camera.skew)
+	player.plane.y = var * -math.cos(player.theta + camera.skew)
 
-	player.plane.x = var * math.sin(player.theta)
-	player.plane.y = var * (-math.cos(player.theta))
-
-
-	local pos = {
-		x = player.pos.x,
-		y = player.pos.y,
-	}
-	local dir = {
-		x = player.dir.x,
-		y = player.dir.y,
-	}
-	local plane = {
-		x = player.plane.x,
-		y = player.plane.y,
-	}
+	-- Preparing for main raycasting loop
+	local pos = {} -- Player position
+	local dir = {} -- Player direction vector
+	local plane = {} -- Camera plane vector from direction vector
+	pos.x = player.pos.x
+	pos.y = player.pos.y
+	dir.x = player.dir.x
+	dir.y = player.dir.y
+	plane.x = player.plane.x
+	plane.y = player.plane.y
 
 	rays = {}
 
 	-- Main raycasting loop
 	-- Runs loop once per vertical pixel line
 	for x = 0,wW do
-		local camera_x
-		local hit = false
-		local side
+		local camera_x -- X row position in map
+		local hit = false -- Loop bool while it doesn't hit
+		local side -- Bool if it ray hits side of tile
 
 		-- Table containing main distances used through the loop
-		local dist = {
-			ray = {},
-			delta = {},
-			side = {},
-			step = {},
-		}
+		local dist = {}
+		dist.ray = {}
+		dist.delta = {}
+		dist.side = {}
+		dist.step = {}
 
 		camera_x = 2 * x / wW - 1
 		dist.ray.x = dir.x + plane.x * camera_x
 		dist.ray.y = dir.y + plane.y * camera_x
 
-		local map = {
-			x = math.floor(pos.x),
-			y = math.floor(pos.y),
-		}
+		local map = {}
+		map.x = math.floor(pos.x)
+		map.y = math.floor(pos.y)
 
 		-- Distance travelled by ray for one X or one Y unit
 		dist.delta.x = math.abs(1 / dist.ray.x)
@@ -195,11 +203,13 @@ function love.update(dt)
 			tileColor[4] = tileColor[4] / 2
 		end
 
+		--[[
 		if dist.perpWall < 20 then
 			tileColor[4] = tileColor[4] * ((10 / (dist.perpWall - 20)) + 1)
 		else
 			tileColor[4] = 0
 		end
+		--]]
 
 		-- Send back this vertical line's properties to be drawn in love.draw
 		local ray = {
@@ -221,18 +231,15 @@ function love.draw()
 
 	-- Minimap scale factor and variable importing
 	local factor = 10
-	local pos = {
-		y = player.pos.x * factor,
-		x = player.pos.y * factor,
-	}
-	local dir = {
-		y = player.dir.x * factor,
-		x = player.dir.y * factor,
-	}
-	local plane = {
-		y = player.plane.x * factor,
-		x = player.plane.y * factor,
-	}
+	local pos = {}
+	local dir = {}
+	local plane = {}
+	pos.x = player.pos.y * factor
+	pos.y = player.pos.x * factor
+	dir.x = player.dir.y * factor
+	dir.y = player.dir.x * factor
+	plane.x = player.plane.y * factor
+	plane.y = player.plane.x * factor
 
 	-- Player location on the minimap
 	love.graphics.setColor(1,1,1,1)
