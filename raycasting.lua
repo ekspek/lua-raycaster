@@ -21,6 +21,9 @@ function Raycaster:update(dt, worldMap)
 	plane.y = player.plane.y
 
 	self.rays = {}
+	self.buffer = {}
+
+	local texWidth = texture1.width
 
 	-- Main raycasting loop
 	-- Runs loop once per vertical pixel line
@@ -110,6 +113,18 @@ function Raycaster:update(dt, worldMap)
 		-- Add some shading depending on the side the ray hit
 		if side then
 			tileColor[4] = tileColor[4] / 2
+			wallX = pos.y + dist.perpWall * dir.y
+		else
+			wallX = pos.y + dist.perpWall * dir.x
+		end
+		wallX = wallX - math.floor(wallX)
+
+		texX = math.floor(wallX * texWidth)
+		if not side and dir.x > 0 then
+			texX = texWidth - texX - 1
+		end
+		if side and dir.y < 0 then
+			texX = texWidth - texX - 1
 		end
 
 		--[[
@@ -133,10 +148,17 @@ end
 function Raycaster:draw()
 	-- Main "3D" drawing loop
 	love.graphics.setLineStyle('rough')
-	print(#self.rays)
 	for _, ray in ipairs(self.rays) do
 		love.graphics.setColor(ray.tileColor)
 		love.graphics.line(ray)
+	end
+
+	love.graphics.setPointSize(2)
+	for x = 1,#texture1 do
+		for y = 1,#texture1[x] do
+			love.graphics.setColor(texture1[x][y].r, texture1[x][y].g, texture1[x][y].b)
+			love.graphics.points(x*2, y*2)
+		end
 	end
 end
 

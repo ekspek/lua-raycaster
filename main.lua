@@ -54,6 +54,20 @@ var = 1
 local gamma = 0
 
 function love.load()
+	tilebrick = love.image.newImageData("textures/redbrick.png")
+	texture1 = {}
+	for i = 1,tilebrick:getHeight() do
+		texture1[i] = {}
+		for j = 1,tilebrick:getHeight() do
+			texture1[i][j] = {}
+			texture1[i][j].r, texture1[i][j].g, texture1[i][j].b = tilebrick:getPixel(i-1,j-1)
+		end
+	end
+
+	texture1.width = tilebrick:getWidth()
+	texture1.height = tilebrick:getHeight()
+
+	raycaster:init()
 end
 
 function love.update(dt)
