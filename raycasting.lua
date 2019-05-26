@@ -20,14 +20,17 @@ function Raycaster:update(dt, worldMap)
 	plane.x = player.plane.x
 	plane.y = player.plane.y
 
-	self.rays = {}
-	self.buffer = {}
-
 	local texWidth = texture1.width
+
+	self.rays = {}
+	local buffer = {}
+	for i = 1,texWidth do
+		buffer[i] = {}
+	end
 
 	-- Main raycasting loop
 	-- Runs loop once per vertical pixel line
-	for x = 0,wW do
+	for x = 1,wW do
 		local camera_x -- X row position in map
 		local hit = false -- Loop bool while it doesn't hit
 		local side -- Bool if it ray hits side of tile
@@ -96,8 +99,8 @@ function Raycaster:update(dt, worldMap)
 		local drawStart = -lineHeight / 2 + wH / 2
 		local drawEnd = lineHeight / 2 + wH / 2
 
-		if drawStart < 0 then drawStart = 0 end
-		if drawEnd >= wH then drawEnd = wH - 1 end
+		if drawStart < 1 then drawStart = 1 end
+		if drawEnd > wH then drawEnd = wH end
 
 		-- Set color based on tile number
 		local tile = worldMap[map.x][map.y] 
@@ -119,7 +122,7 @@ function Raycaster:update(dt, worldMap)
 		end
 		wallX = wallX - math.floor(wallX)
 
-		texX = math.floor(wallX * texWidth)
+		texX = math.ceil(wallX * texWidth)
 		if not side and dir.x > 0 then
 			texX = texWidth - texX - 1
 		end
@@ -141,6 +144,31 @@ function Raycaster:update(dt, worldMap)
 			tileColor = tileColor,
 		}
 
+		buffer[x] = {}
+		--[[
+		for y = drawStart, drawEnd do
+			buffer[x][y] = {}
+			yTex = math.ceil(texture1.height * (drawEnd - drawStart) / love.graphics.getHeight())
+			d = y * 256 - (wH / 128) + lineHeight * 128
+			texY = ((d * texture1.height) / lineHeight) / 256
+			if buffer[x][y] then
+				buffer[x][y].r = texture1[texX][texture1.height * texY].r
+				buffer[x][y].g = texture1[texX][texture1.height * texY].g
+				buffer[x][y].b = texture1[texX][texture1.height * texY].b
+			end
+		end
+		--]]
+
+		for y = 1,love.graphics.getHeight() do
+			if y > love.graphics.getHeight() / 2 then
+				buffer[x][y] = {r = 1, g = 0, b = 0}
+			else
+				buffer[x][y] = {r = 0, g = 1, b = 0}
+			end
+		end
+
+		self.buffer = buffer
+
 		table.insert(self.rays, ray)
 	end
 end
@@ -148,16 +176,17 @@ end
 function Raycaster:draw()
 	-- Main "3D" drawing loop
 	love.graphics.setLineStyle('rough')
-	for _, ray in ipairs(self.rays) do
-		love.graphics.setColor(ray.tileColor)
-		love.graphics.line(ray)
-	end
+	--for _, ray in ipairs(self.rays) do
+	--	love.graphics.setColor(ray.tileColor)
+	--	love.graphics.line(ray[1] - 1, ray[2] - 1, ray[3] - 1, ray[4] - 1)
+	--end
 
-	love.graphics.setPointSize(2)
-	for x = 1,#texture1 do
-		for y = 1,#texture1[x] do
-			love.graphics.setColor(texture1[x][y].r, texture1[x][y].g, texture1[x][y].b)
-			love.graphics.points(x*2, y*2)
+	for x = 1,#self.buffer do
+		for y = 1,#self.buffer[x] do
+			if self.buffer[x][y] then
+				love.graphics.setColor(self.buffer[x][y].r, self.buffer[x][y].g, self.buffer[x][y].b)
+				love.graphics.points(x-1,y-1)
+			end
 		end
 	end
 end
